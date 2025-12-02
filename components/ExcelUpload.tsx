@@ -5,6 +5,10 @@ import { parseExcel } from '../lib/excelParser';
 import { InvoiceData } from '../lib/types';
 import { Upload, FileSpreadsheet, CheckCircle } from 'lucide-react';
 
+import { saveInvoiceStats } from '../lib/invoiceService';
+
+import { useAuth } from '../lib/useAuth';
+
 interface ExcelUploadProps {
     onDataParsed: (invoices: InvoiceData[]) => void;
 }
@@ -12,6 +16,7 @@ interface ExcelUploadProps {
 export default function ExcelUpload({ onDataParsed }: ExcelUploadProps) {
     const [loading, setLoading] = useState(false);
     const [fileName, setFileName] = useState<string | null>(null);
+    const { user } = useAuth();
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -23,6 +28,12 @@ export default function ExcelUpload({ onDataParsed }: ExcelUploadProps) {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const invoices = parseExcel(arrayBuffer);
+
+            // Save stats to Supabase (fire and forget or await)
+            if (user) {
+                await saveInvoiceStats(invoices, user.uid);
+            }
+
             onDataParsed(invoices);
         } catch (error) {
             console.error("Error parsing Excel:", error);

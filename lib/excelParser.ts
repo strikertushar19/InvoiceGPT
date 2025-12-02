@@ -22,8 +22,13 @@ export const parseExcel = (data: ArrayBuffer): InvoiceData[] => {
 
     jsonData.forEach((row: any) => {
         // Normalize keys (lowercase, trim) to handle variations
-        const getVal = (keyPart: string) => {
-            const key = Object.keys(row).find(k => k.toLowerCase().includes(keyPart.toLowerCase()));
+        const getVal = (keyPart: string, excludePart?: string) => {
+            const key = Object.keys(row).find(k => {
+                const lowerK = k.toLowerCase();
+                if (!lowerK.includes(keyPart.toLowerCase())) return false;
+                if (excludePart && lowerK.includes(excludePart.toLowerCase())) return false;
+                return true;
+            });
             return key ? row[key] : '';
         };
 
@@ -39,9 +44,9 @@ export const parseExcel = (data: ArrayBuffer): InvoiceData[] => {
             };
 
             const customer: Customer = {
-                name: getVal('customer name'),
-                address: getVal('address') || getVal('customer address'), // 'ADDRESS' in prompt, usually implies customer address
-                pincode: String(getVal('pincode') || getVal('customer pincode')),
+                name: getVal('customer name') || getVal('name', 'seller'),
+                address: getVal('customer address') || getVal('address', 'seller'),
+                pincode: String(getVal('customer pincode') || getVal('pincode', 'seller')),
                 gstNo: String(getVal('gst no if available') || getVal('customer gst') || ''),
                 phone: String(getVal('phone') || getVal('mobile') || getVal('contact') || ''),
             };
